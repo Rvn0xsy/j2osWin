@@ -18,14 +18,14 @@ int main(int argc, char* argv[]) {
 		ExportFunctionName = argv[2];
 		break;
 	default:
-		printf("[*] Usage: %s <DLL Name> [Export Function Name] \n", argv[0]);
-		printf("[*] Example: \n--> TeDll.exe calc.dll\n--> TeDll.exe Lib.dll GetMessage");
+		printf("[*] Usage: %s <DLL Name> <Export Function Name> \n", argv[0]);
+		printf("[*] Example: \n--> j2osWin.exe calc.dll\n--> j2osWin.exe Lib.dll GetMessage");
 		return 0;
 	}
 	// 加载DLL文件
 	hModule = LoadLibraryA(DllName);
 	if (hModule == NULL) {
-		wprintf(L"[+] LoadLibrary Failed! Code: %d \n", GetLastError());
+		printf(L"[+] LoadLibrary Failed! Code: %d \n", GetLastError());
 		return GetLastError();
 	}
 	Sleep(3000);
