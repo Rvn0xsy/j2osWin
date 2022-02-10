@@ -15,9 +15,12 @@ VOID DownLoad(char* url, char* dest) {
              LPBINDSTATUSCALLBACK lpfnCB
 );
 */
-    HMODULE hUrlmon =  LoadLibrary("Urlmon.dll");
-    URLDownloadToFileFunction URLDownloadToFileProc = (URLDownloadToFileFunction)GetProcAddress(hUrlmon, "URLDownloadToFile");
-    URLDownloadToFileProc(NULL, url, dest, 0, NULL);
+    HMODULE hUrlmon =  LoadLibraryA("Urlmon.dll");
+    if (hUrlmon != NULL) {
+        URLDownloadToFileFunction URLDownloadToFileProc = (URLDownloadToFileFunction)GetProcAddress(hUrlmon, "URLDownloadToFile");
+        URLDownloadToFileProc(NULL, url, dest, 0, NULL);
+    }
+    
 
 }
 
