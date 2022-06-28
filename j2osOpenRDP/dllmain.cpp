@@ -9,11 +9,11 @@ using namespace std;
 #include <Wbemidl.h>
 
 #pragma comment(lib, "wbemuuid.lib")
-HRESULT hres;
+
 
 INT InvokeWMIProcess()
 {
-    // HRESULT hres;
+    HRESULT hres;
 
     // Step 1: --------------------------------------------------
     // Initialize COM. ------------------------------------------
@@ -145,8 +145,8 @@ INT InvokeWMIProcess()
     // Create the values for the in parameters
     VARIANT AllowTSConnections;
 
-    AllowTSConnections.vt = VT_INT;
-    AllowTSConnections.bstrVal = _bstr_t(1);
+    AllowTSConnections.vt = VT_I4;
+    AllowTSConnections.iVal = 1;
 
     // Store the value for the in parameters
     hres = pClassInstance->Put(L"AllowTSConnections", 0,
