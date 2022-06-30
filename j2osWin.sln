@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "j2osAddUser", "j2osAddUser\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "j2osExec", "j2osExec\j2osExec.vcxproj", "{4B739A2D-EDB7-44C3-84D9-D870EABC979C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "j2osOpenRDP", "j2osOpenRDP\j2osOpenRDP.vcxproj", "{D4D93E27-4D37-4A97-AF1C-3D3FAE23A081}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "josCreateProcess", "josCreateProcess\josCreateProcess.vcxproj", "{D412CB2B-1ECB-425B-96AC-BAAE6E64B2C2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,14 +43,14 @@ Global
 		{4B739A2D-EDB7-44C3-84D9-D870EABC979C}.Release|x64.Build.0 = Release|x64
 		{4B739A2D-EDB7-44C3-84D9-D870EABC979C}.Release|x86.ActiveCfg = Release|Win32
 		{4B739A2D-EDB7-44C3-84D9-D870EABC979C}.Release|x86.Build.0 = Release|Win32
-		{D4D93E27-4D37-4A97-AF1C-3D3FAE23A081}.Debug|x64.ActiveCfg = Debug|x64
-		{D4D93E27-4D37-4A97-AF1C-3D3FAE23A081}.Debug|x64.Build.0 = Debug|x64
-		{D4D93E27-4D37-4A97-AF1C-3D3FAE23A081}.Debug|x86.ActiveCfg = Debug|Win32
-		{D4D93E27-4D37-4A97-AF1C-3D3FAE23A081}.Debug|x86.Build.0 = Debug|Win32
-		{D4D93E27-4D37-4A97-AF1C-3D3FAE23A081}.Release|x64.ActiveCfg = Release|x64
-		{D4D93E27-4D37-4A97-AF1C-3D3FAE23A081}.Release|x64.Build.0 = Release|x64
-		{D4D93E27-4D37-4A97-AF1C-3D3FAE23A081}.Release|x86.ActiveCfg = Release|Win32
-		{D4D93E27-4D37-4A97-AF1C-3D3FAE23A081}.Release|x86.Build.0 = Release|Win32
+		{D412CB2B-1ECB-425B-96AC-BAAE6E64B2C2}.Debug|x64.ActiveCfg = Debug|x64
+		{D412CB2B-1ECB-425B-96AC-BAAE6E64B2C2}.Debug|x64.Build.0 = Debug|x64
+		{D412CB2B-1ECB-425B-96AC-BAAE6E64B2C2}.Debug|x86.ActiveCfg = Debug|Win32
+		{D412CB2B-1ECB-425B-96AC-BAAE6E64B2C2}.Debug|x86.Build.0 = Debug|Win32
+		{D412CB2B-1ECB-425B-96AC-BAAE6E64B2C2}.Release|x64.ActiveCfg = Release|x64
+		{D412CB2B-1ECB-425B-96AC-BAAE6E64B2C2}.Release|x64.Build.0 = Release|x64
+		{D412CB2B-1ECB-425B-96AC-BAAE6E64B2C2}.Release|x86.ActiveCfg = Release|Win32
+		{D412CB2B-1ECB-425B-96AC-BAAE6E64B2C2}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
