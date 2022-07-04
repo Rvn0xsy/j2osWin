@@ -6,3 +6,4 @@
 #define METHOD_SHELL_CODE_LOADE 0x01  // SHELLCODE 加载
 #define METHOD_MINIDUMP_LSASS 0x02   // 转出Lsass.exe
 #define METHOD_ADD_USER 0x03  // 添加用户
+#define METHOD_GETSYSTEM 0x04

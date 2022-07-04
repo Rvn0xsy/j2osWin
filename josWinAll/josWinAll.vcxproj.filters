@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\efs">
+      <UniqueIdentifier>{293c6646-62ea-4631-9003-30e4f18b36b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\efs">
+      <UniqueIdentifier>{2ee83e81-68aa-4191-a51f-9495501f136a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -39,6 +45,15 @@
     <ClInclude Include="shellcode.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="service2system.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="efs\efs-win32.h">
+      <Filter>头文件\efs</Filter>
+    </ClInclude>
+    <ClInclude Include="efs\efs-x64.h">
+      <Filter>头文件\efs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -61,6 +76,15 @@
     </ClCompile>
     <ClCompile Include="shellcode.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="service2system.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="efs\efs_c-win32.c">
+      <Filter>源文件\efs</Filter>
+    </ClCompile>
+    <ClCompile Include="efs\efs_c-x64.c">
+      <Filter>源文件\efs</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
