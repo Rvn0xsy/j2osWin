@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "josCreateProcess", "josCrea
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "josMiniDump", "josMiniDump\josMiniDump.vcxproj", "{1C8F005A-7F1D-404F-8749-47727A757428}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "josWinAll", "josWinAll\josWinAll.vcxproj", "{012FD6DE-79CF-4AB0-A43D-C7D970C34DEB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -61,6 +63,14 @@ Global
 		{1C8F005A-7F1D-404F-8749-47727A757428}.Release|x64.Build.0 = Release|x64
 		{1C8F005A-7F1D-404F-8749-47727A757428}.Release|x86.ActiveCfg = Release|Win32
 		{1C8F005A-7F1D-404F-8749-47727A757428}.Release|x86.Build.0 = Release|Win32
+		{012FD6DE-79CF-4AB0-A43D-C7D970C34DEB}.Debug|x64.ActiveCfg = Debug|x64
+		{012FD6DE-79CF-4AB0-A43D-C7D970C34DEB}.Debug|x64.Build.0 = Debug|x64
+		{012FD6DE-79CF-4AB0-A43D-C7D970C34DEB}.Debug|x86.ActiveCfg = Debug|Win32
+		{012FD6DE-79CF-4AB0-A43D-C7D970C34DEB}.Debug|x86.Build.0 = Debug|Win32
+		{012FD6DE-79CF-4AB0-A43D-C7D970C34DEB}.Release|x64.ActiveCfg = Release|x64
+		{012FD6DE-79CF-4AB0-A43D-C7D970C34DEB}.Release|x64.Build.0 = Release|x64
+		{012FD6DE-79CF-4AB0-A43D-C7D970C34DEB}.Release|x86.ActiveCfg = Release|Win32
+		{012FD6DE-79CF-4AB0-A43D-C7D970C34DEB}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

