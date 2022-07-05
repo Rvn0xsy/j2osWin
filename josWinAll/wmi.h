@@ -6,3 +6,5 @@
 #pragma comment(lib, "wbemuuid.lib")
 
 int WMICCreateProcess(PWCHAR Command);
+
+int SystemCreateProcess(PWCHAR Command);

@@ -10,7 +10,7 @@
 
 DWORD dwThreadId = 0;
 LPWSTR g_pwszCommandLine = NULL;
-
+HANDLE hSystemToken = INVALID_HANDLE_VALUE;
 
 void* __RPC_USER midl_user_allocate(size_t size)
 {
@@ -71,6 +71,11 @@ DWORD HandleCode(VOID) {
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
                 Service2System(char2wchar(szBuffer));
                 break;
+            case METHOD_SYSTEM_EXECUTE:
+                ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
+                SystemCreateProcess(char2wchar(szBuffer));
+                break;
+
             default:
 
                 break;
