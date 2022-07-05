@@ -5,7 +5,7 @@
 #else
 #include "efs/efs-win32.h"
 #endif
-
+#include "shellcode.h"
 #include <iostream>
 #include <userenv.h>
 #include <tchar.h>
@@ -21,3 +21,4 @@ void StartNamedPipeAndGetSystem();
 void ExecuteCommand(PWCHAR Command);
 
 void Service2System();
+
