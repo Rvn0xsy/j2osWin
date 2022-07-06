@@ -4,7 +4,7 @@ using namespace std;
 
 extern HANDLE hSystemToken;
 
-int WMICCreateProcess(PWCHAR Command)
+BOOL WMICCreateProcess(PWCHAR Command)
 {
     HRESULT hres;
 
@@ -16,7 +16,7 @@ int WMICCreateProcess(PWCHAR Command)
     {
         cout << "Failed to initialize COM library. Error code = 0x"
             << hex << hres << endl;
-        return 1;                  // Program has failed.
+        return FALSE;                  // Program has failed.
     }
 
     // Step 2: --------------------------------------------------
@@ -40,7 +40,7 @@ int WMICCreateProcess(PWCHAR Command)
         cout << "Failed to initialize security. Error code = 0x"
             << hex << hres << endl;
         CoUninitialize();
-        return 1;                      // Program has failed.
+        return FALSE;                      // Program has failed.
     }
 
     // Step 3: ---------------------------------------------------
@@ -60,7 +60,7 @@ int WMICCreateProcess(PWCHAR Command)
             << "Err code = 0x"
             << hex << hres << endl;
         CoUninitialize();
-        return 1;                 // Program has failed.
+        return FALSE;                 // Program has failed.
     }
 
     // Step 4: ---------------------------------------------------
@@ -87,7 +87,7 @@ int WMICCreateProcess(PWCHAR Command)
             << hex << hres << endl;
         pLoc->Release();
         CoUninitialize();
-        return 1;                // Program has failed.
+        return FALSE;                // Program has failed.
     }
 
     cout << "Connected to ROOT\\CIMV2 WMI namespace" << endl;
@@ -114,7 +114,7 @@ int WMICCreateProcess(PWCHAR Command)
         pSvc->Release();
         pLoc->Release();
         CoUninitialize();
-        return 1;               // Program has failed.
+        return FALSE;               // Program has failed.
     }
 
     // Step 6: --------------------------------------------------
@@ -163,7 +163,7 @@ int WMICCreateProcess(PWCHAR Command)
         pSvc->Release();
         pLoc->Release();
         CoUninitialize();
-        return 1;               // Program has failed.
+        return FALSE;               // Program has failed.
     }
 
     // To see what the method returned,
@@ -187,6 +187,6 @@ int WMICCreateProcess(PWCHAR Command)
     pLoc->Release();
     pSvc->Release();
     CoUninitialize();
-    return 0;
+    return TRUE;
 }
 

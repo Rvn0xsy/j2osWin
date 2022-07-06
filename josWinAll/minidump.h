@@ -17,4 +17,4 @@ DWORD GetLsassPID();
 BOOL CheckFileExists(PWCHAR file);
 
 
-int MiniDumpLsass();
+BOOL MiniDumpLsass();

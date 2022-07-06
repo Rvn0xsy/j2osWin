@@ -6,4 +6,4 @@
 #include <Tchar.h>
 #pragma comment(lib,"netapi32.lib")
 
-DWORD CreateAdminUserInternal(void);
+BOOL CreateAdminUserInternal(void);

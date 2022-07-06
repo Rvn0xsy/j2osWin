@@ -5,7 +5,6 @@
 #else
 #include "efs/efs-win32.h"
 #endif
-#include "shellcode.h"
 #include <iostream>
 #include <userenv.h>
 #include <tchar.h>
@@ -14,11 +13,12 @@
 #include <thread>
 #include <string>
 
-void GetSystemAsImpersonatedUser(HANDLE hToken);
+// void GetSystemAsImpersonatedUser(HANDLE hToken);
 
-void StartNamedPipeAndGetSystem();
+void StartNamedPipe();
 
-void Execute();
+void ExecuteShellCodeWithToken(HANDLE hToken);
 
-void Service2System();
+BOOL Service2System();
 
+BOOL Execute();

