@@ -7,4 +7,3 @@
 
 int WMICCreateProcess(PWCHAR Command);
 
-int SystemCreateProcess(PWCHAR Command);

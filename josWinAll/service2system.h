@@ -18,7 +18,7 @@ void GetSystemAsImpersonatedUser(HANDLE hToken);
 
 void StartNamedPipeAndGetSystem();
 
-void ExecuteCommand(PWCHAR Command);
+void Execute();
 
 void Service2System();
 

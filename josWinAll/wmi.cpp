@@ -190,21 +190,3 @@ int WMICCreateProcess(PWCHAR Command)
     return 0;
 }
 
-int SystemCreateProcess(PWCHAR Command)
-{
-    
-    
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-   
-    wprintf(L"[+] Command : %s !\n", Command);
-    WCHAR cmd[] = L"C:\\Windows\\System32\\cmd.exe";
-    if (CreateProcess(NULL, cmd, NULL, NULL, FALSE, NULL, NULL, NULL, &si, &pi) == 0) {
-        wprintf(L"[!] CreateProcess Error %d !\n",GetLastError());
-        RevertToSelf();
-        return 0;
-    }
-     
-    return 0;
-}
-
