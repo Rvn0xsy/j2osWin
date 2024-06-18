@@ -5,4 +5,4 @@
 本仓库仅用于存储相关演示代码，切勿实战使用，可根据自己的需求进行更新，或者提交PR，如果你想的话。
 
 
-参考链接：[通过动态链接库绕过反病毒软件Hook - Break JVM](https://payloads.online/archivers/2022-08-11/1/)
+参考链接：[通过动态链接库绕过反病毒软件Hook - Break JVM](https://payloads.online/archivers/2022/08/11/f1aa37ea-fb3f-4f2c-9e87-862934ea1c03)
